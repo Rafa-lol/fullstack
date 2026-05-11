@@ -62,12 +62,15 @@ public class UserRepositoryImpl implements UserRepository<User> {
             // send email to user with verification URL
             //emailService.sendVerificationUrl(user.getFirstName(), user.getEmail(), verificationUrl, ACCOUNT);
             user.setEnabled(false);     //estado inicial da conta, desativada(precisa de ser ativada) e não bloqueada
-            user.setNotLocked(false);
+            user.setNotLocked(true);
             // return the newly created user
             return user;
             // if any errors, throw exception with proper message
 
         }catch (Exception e){
+            //e.printStackTrace();
+            //throw new RuntimeException(e);
+            log.error(e.getMessage());
             throw new ApiException("An error occured. Please try again.");
         }
     }
@@ -102,8 +105,8 @@ public class UserRepositoryImpl implements UserRepository<User> {
 
     private SqlParameterSource getSqlParameterSource(User user) {
         return new MapSqlParameterSource()
-                .addValue("firstName", user.getFirstName())
-                .addValue("lastName", user.getLastName())
+                .addValue("firstname", user.getFirstName())
+                .addValue("lastname", user.getLastName())
                 .addValue("email", user.getEmail())
                 /// não revelar password e vir encriptada
                 .addValue("password", encoder.encode(user.getPassword()));

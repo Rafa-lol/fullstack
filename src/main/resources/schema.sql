@@ -18,17 +18,17 @@ SET TIME_ZONE = '+00:00';
 USE full_Project;
 
 
-DROP TABLE IF EXISTS UserEvents;
-DROP TABLE IF EXISTS UserRoles;
-DROP TABLE IF EXISTS TwoFactorVerifications;
-DROP TABLE IF EXISTS ResetPasswordVerifications;
-DROP TABLE IF EXISTS AccountVerifications;
-DROP TABLE IF EXISTS Events;
-DROP TABLE IF EXISTS Roles;
-DROP TABLE IF EXISTS Users;
+--DROP TABLE IF EXISTS UserEvents;
+--DROP TABLE IF EXISTS UserRoles;
+--DROP TABLE IF EXISTS TwoFactorVerifications;
+--DROP TABLE IF EXISTS ResetPasswordVerifications;
+--DROP TABLE IF EXISTS AccountVerifications;
+--DROP TABLE IF EXISTS Events;
+--DROP TABLE IF EXISTS Roles;
+--DROP TABLE IF EXISTS Users;
 
 
-CREATE TABLE Users
+CREATE TABLE IF NOT EXISTS  Users
 (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     first_name      VARCHAR(50) NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE Users
     title           VARCHAR(50) DEFAULT NULL,
     bio             VARCHAR(255) DEFAULT NULL,
     enabled         BOOLEAN DEFAULT FALSE,
-    non_locked      BOOLEAN DEFAULT TRUE,
+    not_locked      BOOLEAN DEFAULT TRUE,
     using_mfa       BOOLEAN DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     image_url       VARCHAR(255) DEFAULT 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
@@ -48,7 +48,7 @@ CREATE TABLE Users
 );
 
 
-CREATE TABLE Roles
+CREATE TABLE IF NOT EXISTS  Roles
 (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(50) NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE Roles
 );
 
 
-CREATE TABLE UserRoles
+CREATE TABLE IF NOT EXISTS  UserRoles
 (
     id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id      BIGINT UNSIGNED NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE UserRoles
 );
 
 
-CREATE TABLE Events
+CREATE TABLE IF NOT EXISTS  Events
 (
     id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     type             VARCHAR(50) NOT NULL CHECK(type IN ('LOGIN_ATTEMPT', 'LOGIN_ATTEMPT_FAILURE', 'LOGIN_SUCCESS', 'PROFILE_UPDATE', 'PROFILE_PICTURE_UPDATE', 'ROLE_UPDATE', 'ACCOUNT_SETTINGS_UPDATE', 'PASSWORD_UPDATE', 'MFA_UPDATE')),
@@ -77,7 +77,7 @@ CREATE TABLE Events
 );
 
 
-CREATE TABLE UserEvents
+CREATE TABLE IF NOT EXISTS  UserEvents
 (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id         BIGINT UNSIGNED NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE UserEvents
 );
 
 
-CREATE TABLE AccountVerifications
+CREATE TABLE IF NOT EXISTS  AccountVerifications
 (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id         BIGINT UNSIGNED NOT NULL,
@@ -102,7 +102,7 @@ CREATE TABLE AccountVerifications
 );
 
 
-CREATE TABLE ResetPasswordVerifications
+CREATE TABLE IF NOT EXISTS  ResetPasswordVerifications
 (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id         BIGINT UNSIGNED NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE ResetPasswordVerifications
 );
 
 
-CREATE TABLE TwoFactorVerifications
+CREATE TABLE IF NOT EXISTS  TwoFactorVerifications
 (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id         BIGINT UNSIGNED NOT NULL,
