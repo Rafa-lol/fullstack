@@ -1,6 +1,8 @@
 package io.Rafa_lol.full_Project.repository;
 
 import io.Rafa_lol.full_Project.domain.User;
+import jakarta.validation.constraints.NotEmpty;
+
 import java.util.Collection;
 
 public interface UserRepository<T extends User> {
@@ -13,4 +15,8 @@ public interface UserRepository<T extends User> {
 
 
     /* operações mais complexas */
+
+
+    User getUserByEmail(String email);
+
 }

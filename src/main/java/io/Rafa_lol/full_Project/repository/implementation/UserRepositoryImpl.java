@@ -2,9 +2,11 @@ package io.Rafa_lol.full_Project.repository.implementation;
 
 import io.Rafa_lol.full_Project.domain.Role;
 import io.Rafa_lol.full_Project.domain.User;
+import io.Rafa_lol.full_Project.domain.UserPrincipal;
 import io.Rafa_lol.full_Project.exception.ApiException;
 import io.Rafa_lol.full_Project.repository.RoleRepository;
 import io.Rafa_lol.full_Project.repository.UserRepository;
+import io.Rafa_lol.full_Project.rowmapper.UserRowMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -13,6 +15,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -30,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 @Repository
 @RequiredArgsConstructor
 @Slf4j
-public class UserRepositoryImpl implements UserRepository<User> {
+public class UserRepositoryImpl implements UserRepository<User>, UserDetailsService {
 
     private final NamedParameterJdbcTemplate jdbc; /// Spring abre e feche as conecções com a base de dados automaticamente
     private final RoleRepository<Role> roleRepository;
@@ -61,7 +66,7 @@ public class UserRepositoryImpl implements UserRepository<User> {
 
             // send email to user with verification URL
             //emailService.sendVerificationUrl(user.getFirstName(), user.getEmail(), verificationUrl, ACCOUNT);
-            user.setEnabled(false);     //estado inicial da conta, desativada(precisa de ser ativada) e não bloqueada
+            user.setEnabled(true);     //estado inicial da conta, desativada(precisa de ser ativada) e não bloqueada
             user.setNotLocked(true);
             // return the newly created user
             return user;
@@ -116,6 +121,33 @@ public class UserRepositoryImpl implements UserRepository<User> {
         /// Url criada pelo server
          return ServletUriComponentsBuilder.fromCurrentRequest().path("/user/verify/" + type + "/" + key).toUriString();
 
+    }
+
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = getUserByEmail(email);
+        if(user == null){
+            log.error("User not found in the database");
+            throw new UsernameNotFoundException("User not found in the database");
+        }else{
+            log.info("User found in the database: {}", email);
+            return new UserPrincipal(user, roleRepository.getRoleByUserId(user.getId()).getPermission());
+        }
+    }
+
+    @Override
+    public User getUserByEmail(String email) {
+        try {
+            User user  = jdbc.queryForObject(SELECT_USER_BY_EMAIL_QUERY, of("email", email), new UserRowMapper());
+            return user;
+
+        }catch (EmptyResultDataAccessException exception){
+            throw new ApiException("No User found by email: "+ email);
+        }catch (Exception e){
+            log.error(e.getMessage());
+            throw new ApiException("An error occured. Please try again.");
+        }
     }
 
 
