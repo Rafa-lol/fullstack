@@ -3,9 +3,12 @@ package io.Rafa_lol.full_Project.resource;
 
 import io.Rafa_lol.full_Project.domain.HttpResponse;
 import io.Rafa_lol.full_Project.domain.User;
+import io.Rafa_lol.full_Project.domain.UserPrincipal;
 import io.Rafa_lol.full_Project.dto.UserDTO;
 import io.Rafa_lol.full_Project.form.LoginForm;
+import io.Rafa_lol.full_Project.provider.TokenProvider;
 import io.Rafa_lol.full_Project.repository.UserRepository;
+import io.Rafa_lol.full_Project.service.RoleService;
 import io.Rafa_lol.full_Project.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,13 +35,14 @@ import static org.springframework.http.HttpStatus.*;
 public class UserResource {
 
     private final UserService userService;
-
+    private final RoleService roleService;
     private final AuthenticationManager authenticationManager;
+    private final TokenProvider tokenProvider;
 
 
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm) {
-        
+
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginForm.getEmail(), loginForm.getPassword()));
 
         UserDTO user = userService.getUserByEmail(loginForm.getEmail());
@@ -71,12 +75,17 @@ public class UserResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(Map.of("user", user))
+                        .data(Map.of("user", user, "access_token", tokenProvider.createAccessToken(getUserPrincipal(user))
+                        , "refresh_token", tokenProvider.createRefreshToken(getUserPrincipal(user))))
                         .message("Login Success")
                         .status(OK)
                         .statusCode(OK.value())
                         .build());
 
+    }
+
+    private UserPrincipal getUserPrincipal(UserDTO user) {
+        return new UserPrincipal(userService.getUser(user.getEmail()), roleService.getRoleByUserId(user.getId()).getPermission());
     }
 
     private ResponseEntity<HttpResponse> sendVerificationCode(UserDTO user) {
