@@ -1,6 +1,7 @@
 package io.Rafa_lol.full_Project.repository;
 
 import io.Rafa_lol.full_Project.domain.User;
+import io.Rafa_lol.full_Project.dto.UserDTO;
 import jakarta.validation.constraints.NotEmpty;
 
 import java.util.Collection;
@@ -19,4 +20,5 @@ public interface UserRepository<T extends User> {
 
     User getUserByEmail(String email);
 
+    void sendVerificationCode(UserDTO user);
 }

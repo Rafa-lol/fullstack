@@ -3,12 +3,14 @@ package io.Rafa_lol.full_Project.repository.implementation;
 import io.Rafa_lol.full_Project.domain.Role;
 import io.Rafa_lol.full_Project.domain.User;
 import io.Rafa_lol.full_Project.domain.UserPrincipal;
+import io.Rafa_lol.full_Project.dto.UserDTO;
 import io.Rafa_lol.full_Project.exception.ApiException;
 import io.Rafa_lol.full_Project.repository.RoleRepository;
 import io.Rafa_lol.full_Project.repository.UserRepository;
 import io.Rafa_lol.full_Project.rowmapper.UserRowMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -29,14 +31,19 @@ import static io.Rafa_lol.full_Project.enumeration.RoleType.ROLE_USER;
 import static io.Rafa_lol.full_Project.enumeration.VerificationType.ACCOUNT;
 import static io.Rafa_lol.full_Project.query.UserQuery.*;
 
+import static io.Rafa_lol.full_Project.utils.SmsUtils.sendSMS;
 import static java.util.Map.*;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.commons.lang3.time.DateFormatUtils.*;
+import static org.apache.commons.lang3.time.DateUtils.addDays;
 
 @Repository
 @RequiredArgsConstructor
 @Slf4j
 public class UserRepositoryImpl implements UserRepository<User>, UserDetailsService {
 
+    private static final String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss";
     private final NamedParameterJdbcTemplate jdbc; /// Spring abre e feche as conecções com a base de dados automaticamente
     private final RoleRepository<Role> roleRepository;
     private final BCryptPasswordEncoder encoder;
@@ -148,6 +155,22 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             log.error(e.getMessage());
             throw new ApiException("An error occured. Please try again.");
         }
+    }
+
+    @Override
+    public void sendVerificationCode(UserDTO user) {
+        String expirationDate = format(addDays(new Date(), 1), DATE_FORMAT);
+        String verificationCode = randomAlphabetic(8).toUpperCase();
+
+        try {
+            jdbc.update(DELETE_VERIFICATION_CODE_BY_USER_ID, of("id", user.getId()));
+            jdbc.update(INSERT_VERIFICATION_CODE_QUERY, of("userId", user.getId(), "code", verificationCode, "expirationDate", expirationDate));
+            //sendSMS(user.getPhone(), "From: Rafa \nVerification code \n" + verificationCode);
+        }catch (Exception e){
+            log.error(e.getMessage());
+            throw new ApiException("An error occured. Please try again.");
+        }
+
     }
 
 
