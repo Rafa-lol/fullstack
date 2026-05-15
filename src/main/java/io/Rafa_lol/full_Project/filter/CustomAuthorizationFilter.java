@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static io.Rafa_lol.full_Project.utils.ExceptionUtils.processError;
 import static java.util.Arrays.asList;
 import static java.util.Map.*;
 import static java.util.Optional.ofNullable;
@@ -38,11 +39,11 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
     protected static final String EMAIL_KEY = "email";
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filter) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filter) throws ServletException, IOException {
 
         try{
             Map<String, String> values = getRequestValues(request);
-
             String token = getToken(request);
 
             if(tokenProvider.isTokenValid(values.get(EMAIL_KEY), token)){
@@ -55,13 +56,12 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.clearContext();
             }
-
             filter.doFilter(request, response);
 
         }catch (Exception exception){
 
             log.error(exception.getMessage());
-            ///processError(request, response, exception);
+            processError(request, response, exception);
         }
 
 
