@@ -1,5 +1,7 @@
 package io.Rafa_lol.full_Project.query;
 
+import io.jsonwebtoken.security.PublicJwkBuilder;
+
 public class UserQuery {
 
 
@@ -35,5 +37,23 @@ public class UserQuery {
     public static final String SELECT_CODE_EXPIRATION_QUERY =
             "SELECT expiration_date < NOW() AS is_expired FROM TwoFactorVerifications WHERE code = :code";
 
+    public static final String DELETE_PASSWORD_VERIFICATION_BY_USER_ID_QUERY =
+            "DELETE FROM ResetPasswordVerifications WHERE user_id = :userId";
 
+    public static final String INSERT_PASSWORD_VERIFICATION_QUERY =
+            "INSERT INTO ResetPasswordVerifications (user_id, url, expiration_date) " +
+                    "VALUES (:userId, :url, :expirationDate)";
+
+
+    public static final String SELECT_EXPIRATION_BY_URL =
+            "SELECT expiration_date < NOW() AS is_expired FROM ResetPasswordVerifications WHERE url = :url";
+
+    public static final String SELECT_USER_PASSWORD_URL_QUERY =
+            "SELECT * FROM users WHERE id = (SELECT user_id FROM ResetPasswordVerifications WHERE url = :url)";
+
+    public static final String UPDATE_USER_PASSWORD_BY_URL_QUERY =
+            "UPDATE users SET password = :password WHERE id = (SELECT user_id FROM ResetPasswordVerifications WHERE url = :url)";
+
+    public static final String DELETE_VERIFICATION_BY_URL_QUERY =
+            "DELETE FROM ResetPasswordVerifications WHERE url = :url";
 }
