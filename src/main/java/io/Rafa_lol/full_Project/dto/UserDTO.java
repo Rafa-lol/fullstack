@@ -2,12 +2,16 @@ package io.Rafa_lol.full_Project.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 
-@Data ///ou usar só @Getters @Setters
+//@Data ///ou usar só @Getters @Setters
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserDTO {
 
     private Long id;
@@ -23,5 +27,7 @@ public class UserDTO {
     private boolean isNotLocked;
     private boolean isUsingMfa;
     private LocalDateTime createdAt;
+    private String roleName;
+    private String permissions;
 
 }

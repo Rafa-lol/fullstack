@@ -49,7 +49,7 @@ public class TokenProvider {
     {
         return JWT.create().withIssuer(GET_COMPANY).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
                 .withIssuedAt(new Date()).withSubject(userPrincipal.getUsername()).withArrayClaim(AUTHORITIES, getClaimsFromUser(userPrincipal))
-                .withIssuedAt(new Date(currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
+                .withExpiresAt(new Date(currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
                 .sign(HMAC512(secret.getBytes()));
     }
 
@@ -58,7 +58,7 @@ public class TokenProvider {
     {
         return JWT.create().withIssuer(GET_COMPANY).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
                 .withIssuedAt(new Date()).withSubject(userPrincipal.getUsername())
-                .withIssuedAt(new Date(currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
+                .withExpiresAt(new Date(currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
                 .sign(HMAC512(secret.getBytes()));
     }
 

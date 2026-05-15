@@ -166,10 +166,43 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             jdbc.update(DELETE_VERIFICATION_CODE_BY_USER_ID, of("id", user.getId()));
             jdbc.update(INSERT_VERIFICATION_CODE_QUERY, of("userId", user.getId(), "code", verificationCode, "expirationDate", expirationDate));
             //sendSMS(user.getPhone(), "From: Rafa \nVerification code \n" + verificationCode);
+            log.info("Verification code: {}", verificationCode);
         }catch (Exception e){
             log.error(e.getMessage());
             throw new ApiException("An error occured. Please try again.");
         }
+
+    }
+
+    @Override
+    public User verifyCode(String email, String code) {
+        if(isVerificationCodeExpired(code)) throw new ApiException("This code has expired. Please login again.");
+        try {
+            User userByCode = jdbc.queryForObject(SELECT_USER_CODE_QUERY, of("code", code), new UserRowMapper());
+            User userByEmail = jdbc.queryForObject(SELECT_USER_BY_EMAIL_QUERY, of("email", email), new UserRowMapper());
+            if(userByCode.getEmail().equalsIgnoreCase(userByEmail.getEmail())){
+                jdbc.update(DELETE_CODE, of("code", code));
+                return userByCode;
+            }else{
+                throw new ApiException("Code is invalid. Please try again.");
+            }
+        }catch (EmptyResultDataAccessException e){
+            throw new ApiException("Could noy find record");
+        }catch (Exception e) {
+            throw new ApiException("An error occured. Please try again.");
+        }
+    }
+
+    private boolean isVerificationCodeExpired(String code) {
+        try {
+            return jdbc.queryForObject(SELECT_CODE_EXPIRATION_QUERY, of("code", code), Boolean.class);
+
+        }catch (EmptyResultDataAccessException e){
+            throw new ApiException("This code is not valid. Please login again");
+        }catch (Exception e) {
+            throw new ApiException("An error occured. Please try again.");
+        }
+
 
     }
 

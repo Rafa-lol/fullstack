@@ -1,9 +1,11 @@
 package io.Rafa_lol.full_Project.service.implementation;
 
 
+import io.Rafa_lol.full_Project.domain.Role;
 import io.Rafa_lol.full_Project.domain.User;
 import io.Rafa_lol.full_Project.dto.UserDTO;
 import io.Rafa_lol.full_Project.dtomapper.UserDTOMapper;
+import io.Rafa_lol.full_Project.repository.RoleRepository;
 import io.Rafa_lol.full_Project.repository.UserRepository;
 import io.Rafa_lol.full_Project.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -16,16 +18,17 @@ import static io.Rafa_lol.full_Project.dtomapper.UserDTOMapper.fromUser;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository<User> userRepository;
+    private final RoleRepository<Role> roleRepository;
 
     @Override
     public UserDTO createUser(User user) {
 
-        return fromUser(userRepository.create(user));
+        return mapToUserDTO(userRepository.create(user));
     }
 
     @Override
     public UserDTO getUserByEmail(String email) {
-        return fromUser(userRepository.getUserByEmail(email));
+        return mapToUserDTO(userRepository.getUserByEmail(email));
     }
 
     @Override
@@ -34,9 +37,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUser(String email) {
-        return userRepository.getUserByEmail(email);
+    public UserDTO verifyCode(String email, String code) {
+        return mapToUserDTO(userRepository.verifyCode(email, code));
     }
 
+    private UserDTO mapToUserDTO(User user) {
+        return fromUser(user, roleRepository.getRoleByUserId(user.getId()));
+    }
 
 }
