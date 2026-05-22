@@ -11,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,14 +39,18 @@ public class SecurityConfig {
 
     //private static final String[] PUBLIC_URLS = {"/user/login/**", "/user/verify/code/**"};
 
-    private static final String[] PUBLIC_URLS = {"/user/login/**", "/user/verify/code/**", "/user/register/**", "/user/resetpassword/**", "/user/verify/password/**", "/user/resetpassword/{key}/{password}/{confirmPassword}"};
+    private static final String[] PUBLIC_URLS = {"/user/login/**",
+            "/user/verify/code/**", "/user/register/**",
+            "/user/resetpassword/**", "/user/verify/password/**",
+            "/user/resetpassword/{key}/{password}/{confirmPassword}",
+            "/user/verify/account/**", "/user/refresh/token/**"};
 
 
     @Bean
     public SecurityFilterChain  securityFilterChain(HttpSecurity http) throws Exception {
 
         http.csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.authorizeHttpRequests(
@@ -69,6 +74,7 @@ public class SecurityConfig {
     public DaoAuthenticationProvider daoAuthenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(encoder);
+        provider.setHideUserNotFoundExceptions(false);
         return provider;
     }
 

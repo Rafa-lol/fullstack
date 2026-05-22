@@ -5,6 +5,7 @@ import io.Rafa_lol.full_Project.domain.Role;
 import io.Rafa_lol.full_Project.domain.User;
 import io.Rafa_lol.full_Project.dto.UserDTO;
 import io.Rafa_lol.full_Project.dtomapper.UserDTOMapper;
+import io.Rafa_lol.full_Project.form.UpdateForm;
 import io.Rafa_lol.full_Project.repository.RoleRepository;
 import io.Rafa_lol.full_Project.repository.UserRepository;
 import io.Rafa_lol.full_Project.service.UserService;
@@ -54,6 +55,41 @@ public class UserServiceImpl implements UserService {
     @Override
     public void renewPassword(String key, String password, String confirmPassword) {
         userRepository.renewPassword(key, password, confirmPassword);
+    }
+
+    @Override
+    public UserDTO verifyAccountKey(String key) {
+        return mapToUserDTO(userRepository.verifyAccountKey(key));
+    }
+
+    @Override
+    public UserDTO updateUserDetails(UpdateForm user) {
+        return mapToUserDTO(userRepository.updateUserDetails(user));
+    }
+
+    @Override
+    public UserDTO getUserById(Long userId) {
+        return mapToUserDTO(userRepository.get(userId));
+    }
+
+    @Override
+    public void updatePassword(Long id, String currentPassword, String newPassword, String confirmNewPassword) {
+        userRepository.updatePassword(id, currentPassword, newPassword, confirmNewPassword);
+    }
+
+    @Override
+    public void updateUserRole(Long userId, String roleName) {
+        roleRepository.updateUserRole(userId, roleName);
+    }
+
+    @Override
+    public void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked) {
+        userRepository.updateAccountSettings(userId, enabled, notLocked);
+    }
+
+    @Override
+    public UserDTO toggleMfa(String email) {
+        return mapToUserDTO(userRepository.toggleMfa(email));
     }
 
     private UserDTO mapToUserDTO(User user) {

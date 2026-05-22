@@ -29,14 +29,17 @@ public class ExceptionUtils {
                 exception instanceof DisabledException ||
                 exception instanceof LockedException ||
                 exception instanceof BadCredentialsException ||
-                exception instanceof InvalidClaimException ||
-                exception instanceof TokenExpiredException) {
+                exception instanceof InvalidClaimException){
+            System.out.println(exception.getMessage());
             HttpResponse httpResponse = getHttpResponse(response, exception.getMessage(), BAD_REQUEST);
             writeResponse(response, httpResponse);
-        }else{
-            HttpResponse httpResponse = getHttpResponse(response, "An error ocurred. Please try again.", INTERNAL_SERVER_ERROR);
+        }else if(exception instanceof TokenExpiredException ) {
+            HttpResponse httpResponse = getHttpResponse(response, exception.getMessage(), UNAUTHORIZED);
             writeResponse(response, httpResponse);
 
+        } else{
+        HttpResponse httpResponse = getHttpResponse(response, "An error ocurred. Please try again.", INTERNAL_SERVER_ERROR);
+        writeResponse(response, httpResponse);
         }
         log.error(exception.getMessage());
     }

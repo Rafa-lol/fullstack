@@ -2,6 +2,7 @@ package io.Rafa_lol.full_Project.repository;
 
 import io.Rafa_lol.full_Project.domain.User;
 import io.Rafa_lol.full_Project.dto.UserDTO;
+import io.Rafa_lol.full_Project.form.UpdateForm;
 import jakarta.validation.constraints.NotEmpty;
 
 import java.util.Collection;
@@ -29,4 +30,14 @@ public interface UserRepository<T extends User> {
     T verifyPasswordKey(String key);
 
     void renewPassword(String key, String password, String confirmPassword);
+
+    T verifyAccountKey(String key);
+
+    T updateUserDetails(UpdateForm user);
+
+    void updatePassword(Long id, String currentPassword, String newPassword, String confirmNewPassword);
+
+    void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked);
+
+    User toggleMfa(String email);
 }

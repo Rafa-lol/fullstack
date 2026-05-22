@@ -56,4 +56,30 @@ public class UserQuery {
 
     public static final String DELETE_VERIFICATION_BY_URL_QUERY =
             "DELETE FROM ResetPasswordVerifications WHERE url = :url";
+
+
+    public static final String SELECT_USER_BY_ACCOUNT_URL_QUERY =
+            "SELECT * FROM users WHERE id = (SELECT user_id FROM AccountVerifications WHERE url = :url)";
+
+    public static final String UPDATE_USER_ENABLED_QUERY =
+            "UPDATE Users SET enabled = :enabled WHERE id = :id";
+
+    public static final String UPDATE_USER_DETAILS_QUERY =
+            "UPDATE Users SET first_name = :firstname, last_name = :lastname, " +
+                    "email = :email, address = :address, title = :title, bio = :bio WHERE id = :id";
+
+    public static final String SELECT_USER_BY_ID_QUERY =
+            "SELECT * FROM users WHERE id = :id";
+
+
+    public static final String UPDATE_USER_PASSWORD_BY_ID_QUERY =
+            "UPDATE Users SET password = :password WHERE id = :userId";
+
+    public static final String UPDATE_USER_SETTINGS_QUERY =
+            "UPDATE Users SET enabled = :enabled, not_locked = :notLocked WHERE id = :userId";
+
+    public static final String TOGGLE_USER_MFA_QUERY =
+            "UPDATE Users SET using_mfa = :isUsingMfa WHERE email = :email";
+
+
 }

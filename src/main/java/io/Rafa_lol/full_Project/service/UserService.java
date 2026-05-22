@@ -2,7 +2,10 @@ package io.Rafa_lol.full_Project.service;
 
 import io.Rafa_lol.full_Project.domain.User;
 import io.Rafa_lol.full_Project.dto.UserDTO;
+import io.Rafa_lol.full_Project.form.UpdateForm;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 
 public interface UserService {
@@ -22,4 +25,18 @@ public interface UserService {
     UserDTO verifyPasswordKey(String key);
 
     void renewPassword(String key, String password, String confirmPassword);
+
+    UserDTO verifyAccountKey(String key);
+
+    UserDTO updateUserDetails(@Valid UpdateForm user);
+
+    UserDTO getUserById(Long userId);
+
+    void updatePassword(Long userId, @NotEmpty(message = "Current Password cannot be empty") String currentPassword, @NotEmpty(message = "New Password cannot be empty") String newPassword, @NotEmpty(message = "Confirm Password cannot be empty") String confirmNewPassword);
+
+    void updateUserRole(Long userId, String roleName);
+
+    void updateAccountSettings(Long id, @NotNull(message = "Enable cannot be null or empty") Boolean enabled, @NotNull(message = "Not Locked cannot be null or empty") Boolean notLocked);
+
+    UserDTO toggleMfa(String email);
 }

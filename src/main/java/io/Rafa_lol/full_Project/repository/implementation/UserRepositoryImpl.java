@@ -6,6 +6,7 @@ import io.Rafa_lol.full_Project.domain.UserPrincipal;
 import io.Rafa_lol.full_Project.dto.UserDTO;
 import io.Rafa_lol.full_Project.enumeration.VerificationType;
 import io.Rafa_lol.full_Project.exception.ApiException;
+import io.Rafa_lol.full_Project.form.UpdateForm;
 import io.Rafa_lol.full_Project.repository.RoleRepository;
 import io.Rafa_lol.full_Project.repository.UserRepository;
 import io.Rafa_lol.full_Project.rowmapper.UserRowMapper;
@@ -37,6 +38,7 @@ import static io.Rafa_lol.full_Project.utils.SmsUtils.sendSMS;
 import static java.util.Map.*;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.time.DateFormatUtils.*;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
 
@@ -97,7 +99,15 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
     @Override
     public User get(Long id) {
-        return null;
+        try {
+            return jdbc.queryForObject(SELECT_USER_BY_ID_QUERY, of("id", id), new UserRowMapper());
+        } catch (EmptyResultDataAccessException exception) {
+            throw new ApiException("No User found by id: " + id);
+            //return null;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("An error occured. Please try again.");
+        }
     }
 
     @Override
@@ -110,29 +120,6 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
         return null;
     }
 
-
-
-    private Integer getEmailCount(String email) {
-        // procura na base de dados quantos emails temos com o email dado
-        return jdbc.queryForObject(COUNT_USER_EMAIL_QUERY, of("email", email), Integer.class);
-    }
-
-    private SqlParameterSource getSqlParameterSource(User user) {
-        return new MapSqlParameterSource()
-                .addValue("firstname", user.getFirstName())
-                .addValue("lastname", user.getLastName())
-                .addValue("email", user.getEmail())
-                /// não revelar password e vir encriptada
-                .addValue("password", encoder.encode(user.getPassword()));
-    }
-
-    private String getVerificationUrl(String key, String type) {
-        /// Url criada pelo server
-         return ServletUriComponentsBuilder.fromCurrentContextPath()
-                 .path("/user/verify/" + type + "/" + key)
-                 .toUriString();
-
-    }
 
 
     @Override
@@ -154,7 +141,8 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             return user;
 
         }catch (EmptyResultDataAccessException exception){
-            throw new ApiException("No User found by email: "+ email);
+            throw new ApiException("No User found by email: " + email);
+            //return null;
         }catch (Exception e){
             log.error(e.getMessage());
             throw new ApiException("An error occured. Please try again.");
@@ -243,6 +231,119 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             log.error(e.getMessage());
             throw new ApiException("An error occured. Please try again.");
         }
+    }
+
+    @Override
+    public User verifyAccountKey(String key) {
+        try {
+            User user = jdbc.queryForObject(SELECT_USER_BY_ACCOUNT_URL_QUERY, of("url", getVerificationUrl(key, ACCOUNT.getType())), new UserRowMapper());
+            jdbc.update(UPDATE_USER_ENABLED_QUERY, of("enabled", true, "id", user.getId()));
+            return user;
+        }catch (EmptyResultDataAccessException e){
+            throw new ApiException("This link is not valid.");
+        }catch (Exception e) {
+            throw new ApiException("An error occured. Please try again.");
+        }
+    }
+
+    @Override
+    public User updateUserDetails(UpdateForm user) {
+        try {
+            jdbc.update(UPDATE_USER_DETAILS_QUERY, getUserDetailsSqlParameterSource(user));
+            return get(user.getId());
+        }catch (EmptyResultDataAccessException e){
+            throw new ApiException("No User found by email: " + user.getId());
+        }catch (Exception e){
+            log.error(e.getMessage());
+            throw new ApiException("This link is not valid. Please reset your password again.");
+        }
+    }
+
+    @Override
+    public void updatePassword(Long id, String currentPassword, String newPassword, String confirmNewPassword) {
+        if(!newPassword.equals(confirmNewPassword)){
+            log.info("Passwords dont match. Please try again.");
+            throw new ApiException("Passwords dont match. Please try again.");
+        }
+        User user = get(id);
+        if(encoder.matches(currentPassword, user.getPassword())){
+            try {
+                jdbc.update(UPDATE_USER_PASSWORD_BY_ID_QUERY, of("userId", id, "password", encoder.encode(newPassword)));
+                log.info("Passwords update");
+            }catch (Exception e){
+                log.error(e.getMessage());
+                throw new ApiException("This link is not valid. Please reset your password again.");
+            }
+        }else{
+            log.info("Incorrect password");
+            throw new ApiException("Incorrect current password. Please try again.");
+        }
+
+    }
+
+    @Override
+    public void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked) {
+        try {
+            jdbc.update(UPDATE_USER_SETTINGS_QUERY, of("userId", userId, "enabled", enabled, "notLocked", notLocked));
+
+        }catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("An error occured. Please try again.");
+        }
+    }
+
+    @Override
+    public User toggleMfa(String email) {
+
+        User user = getUserByEmail(email);
+        if(isBlank(user.getPhone())){
+            throw new ApiException("You need a phone number to change Multi-Factor Authentication");
+        }
+        user.setUsingMfa(!user.isUsingMfa());
+        try {
+            jdbc.update(TOGGLE_USER_MFA_QUERY, of("email", email, "isUsingMfa", user.isUsingMfa()));
+            return user;
+        }catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("Unable to update Multi-Factor Authentication");
+        }
+
+    }
+
+
+    private Integer getEmailCount(String email) {
+        // procura na base de dados quantos emails temos com o email dado
+        return jdbc.queryForObject(COUNT_USER_EMAIL_QUERY, of("email", email), Integer.class);
+    }
+
+    private SqlParameterSource getSqlParameterSource(User user) {
+        return new MapSqlParameterSource()
+                .addValue("firstname", user.getFirstName())
+                .addValue("lastname", user.getLastName())
+                .addValue("email", user.getEmail())
+                /// não revelar password e vir encriptada
+                .addValue("password", encoder.encode(user.getPassword()));
+    }
+
+
+    private SqlParameterSource getUserDetailsSqlParameterSource(UpdateForm user) {
+        return new MapSqlParameterSource()
+                .addValue("id", user.getId())
+                .addValue("firstname", user.getFirstName())
+                .addValue("lastname", user.getLastName())
+                .addValue("email", user.getEmail())
+                .addValue("phone", user.getPhone())
+                .addValue("address", user.getAddress())
+                .addValue("title", user.getTitle())
+                .addValue("bio", user.getBio());
+    }
+
+
+    private String getVerificationUrl(String key, String type) {
+        /// Url criada pelo server
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/user/verify/" + type + "/" + key)
+                .toUriString();
     }
 
     private boolean isLinkExpired(String key, VerificationType password) {

@@ -8,7 +8,7 @@ public interface RoleRepository<T extends Role> {
 
     /* Operações CRUD */
     T create(T data);
-    Collection<T> list(int page, int pageSize);
+    Collection<T> list();
     T get(Long id);
     T update(T data);
     Boolean delete(Long id);
@@ -18,10 +18,6 @@ public interface RoleRepository<T extends Role> {
     void addRoleToUser(Long userId, String roleName);
     Role getRoleByUserId(Long userId);
     Role getRoleByEmail(String email);
-    void updateRole(Long userId, String roleName);
 
-
-
-
-
+    void updateUserRole(Long userId, String roleName);
 }

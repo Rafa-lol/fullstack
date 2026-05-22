@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -83,8 +84,8 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
 
 
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<HttpResponse> badCredentialsException(BadCredentialsException exception) {
+    @ExceptionHandler({ UsernameNotFoundException.class, BadCredentialsException.class})
+    public ResponseEntity<HttpResponse> handleAuthenticationException (Exception exception) {
         log.error(exception.getMessage());
         return new ResponseEntity<>(
                 HttpResponse.builder()
