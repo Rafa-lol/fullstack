@@ -11,6 +11,7 @@ import io.Rafa_lol.full_Project.repository.UserRepository;
 import io.Rafa_lol.full_Project.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import static io.Rafa_lol.full_Project.dtomapper.UserDTOMapper.fromUser;
 
@@ -90,6 +91,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO toggleMfa(String email) {
         return mapToUserDTO(userRepository.toggleMfa(email));
+    }
+
+    @Override
+    public void updateImage(UserDTO user, MultipartFile image) {
+        userRepository.updateImage(user, image);
     }
 
     private UserDTO mapToUserDTO(User user) {

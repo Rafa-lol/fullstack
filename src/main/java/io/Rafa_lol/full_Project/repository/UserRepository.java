@@ -4,6 +4,7 @@ import io.Rafa_lol.full_Project.domain.User;
 import io.Rafa_lol.full_Project.dto.UserDTO;
 import io.Rafa_lol.full_Project.form.UpdateForm;
 import jakarta.validation.constraints.NotEmpty;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 
@@ -40,4 +41,6 @@ public interface UserRepository<T extends User> {
     void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked);
 
     User toggleMfa(String email);
+
+    void updateImage(UserDTO user, MultipartFile image);
 }

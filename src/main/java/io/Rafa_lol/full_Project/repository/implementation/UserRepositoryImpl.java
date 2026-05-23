@@ -24,9 +24,14 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static io.Rafa_lol.full_Project.enumeration.RoleType.ROLE_USER;
@@ -35,12 +40,14 @@ import static io.Rafa_lol.full_Project.enumeration.VerificationType.PASSWORD;
 import static io.Rafa_lol.full_Project.query.UserQuery.*;
 
 import static io.Rafa_lol.full_Project.utils.SmsUtils.sendSMS;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Map.*;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.time.DateFormatUtils.*;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
+import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -310,6 +317,40 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
     }
 
+    @Override
+    public void updateImage(UserDTO user, MultipartFile image) {
+        String userImageUrl = setUserImageUrl(user.getEmail());
+        user.setImageUrl(userImageUrl);
+        saveImage(user.getEmail(), image);
+        jdbc.update(UPDATE_USER_IMAGE_QUERY, Map.of("imageUrl", userImageUrl, "id", user.getId()));
+    }
+
+    private void saveImage(String email, MultipartFile image) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/").toAbsolutePath().normalize();
+        if(!Files.exists(fileStorageLocation)){
+            try{
+                Files.createDirectories(fileStorageLocation);
+            }catch (Exception exception){
+                log.error(exception.getMessage());
+                throw new ApiException("Unable to create directory to save image.");
+            }
+            log.info("Created directories: {}", fileStorageLocation);
+        }
+        try{
+            Files.copy(image.getInputStream(), fileStorageLocation.resolve(email + ".png"), REPLACE_EXISTING);
+        }catch (IOException exception){
+            log.error(exception.getMessage());
+            throw new ApiException(exception.getMessage());
+        }
+        log.info("File saved in: {} folder" + fileStorageLocation);
+    }
+
+    private String setUserImageUrl(String email) {
+        return fromCurrentContextPath()
+                .path("/user/image/" + email + ".png")
+                .toUriString();
+    }
+
 
     private Integer getEmailCount(String email) {
         // procura na base de dados quantos emails temos com o email dado
@@ -341,7 +382,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
     private String getVerificationUrl(String key, String type) {
         /// Url criada pelo server
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
+        return fromCurrentContextPath()
                 .path("/user/verify/" + type + "/" + key)
                 .toUriString();
     }

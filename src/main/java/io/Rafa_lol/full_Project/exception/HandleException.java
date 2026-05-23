@@ -2,6 +2,7 @@ package io.Rafa_lol.full_Project.exception;
 
 
 import io.Rafa_lol.full_Project.domain.HttpResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.webmvc.error.ErrorController;
@@ -17,6 +18,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -37,6 +39,14 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception exception, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         log.error(exception.getMessage());
+
+
+        HttpServletResponse response = ((ServletWebRequest) request).getResponse();
+        if (response != null && response.isCommitted()) {
+            log.warn("Response already committed by processError(). Skipping further handling.");
+            return null;   // Impede que tente escrever novamente
+        }
+
         return new ResponseEntity<>(
                 HttpResponse.builder()
                         .timestamp(now().toString())
@@ -85,8 +95,9 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
 
 
     @ExceptionHandler({ UsernameNotFoundException.class, BadCredentialsException.class})
-    public ResponseEntity<HttpResponse> handleAuthenticationException (Exception exception) {
+    public ResponseEntity<HttpResponse> handleAuthenticationException (Exception exception, HttpServletResponse response) {
         log.error(exception.getMessage());
+
         return new ResponseEntity<>(
                 HttpResponse.builder()
                         .timestamp(now().toString())
@@ -98,8 +109,13 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
     }
 
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<HttpResponse> apiException(ApiException exception) {
+    public ResponseEntity<HttpResponse> apiException(ApiException exception, HttpServletResponse response) {
         log.error(exception.getMessage());
+
+        if (response.isCommitted()) {
+            return null;
+        }
+
         return new ResponseEntity<>(
                 HttpResponse.builder()
                         .timestamp(now().toString())
