@@ -5,21 +5,28 @@ import io.Rafa_lol.full_Project.domain.HttpResponse;
 import io.Rafa_lol.full_Project.domain.Invoice;
 import io.Rafa_lol.full_Project.domain.User;
 import io.Rafa_lol.full_Project.dto.UserDTO;
+import io.Rafa_lol.full_Project.report.CustomerReport;
 import io.Rafa_lol.full_Project.service.CustomerService;
 import io.Rafa_lol.full_Project.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static java.time.LocalTime.now;
 import static java.util.Map.of;
+import static org.springframework.http.HttpHeaders.*;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
 
@@ -40,7 +47,8 @@ public class CustomerResource {
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("user", userService.getUserByEmail(user.getEmail()),
-                                "customers", customerService.getCustomers(page.orElse(0), size.orElse(10))))
+                                "page", customerService.getCustomers(page.orElse(0), size.orElse(10)),
+                                    "stats", customerService.getStats()))
                         .message("Customers retrieved")
                         .status(OK)
                         .statusCode(OK.value())
@@ -81,7 +89,7 @@ public class CustomerResource {
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("user", userService.getUserByEmail(user.getEmail()),
-                                "customers", customerService.searchCustomers(name.orElse(""), page.orElse(0), size.orElse(10))))
+                                "page", customerService.searchCustomers(name.orElse(""), page.orElse(0), size.orElse(10))))
                         .message("Customers retrieved")
                         .status(OK)
                         .statusCode(OK.value())
@@ -117,10 +125,9 @@ public class CustomerResource {
                                 .build());
     }
 
-    @PostMapping("/invoice/new")
+    @GetMapping("/invoice/new")
     public ResponseEntity<HttpResponse> newInvoice(@AuthenticationPrincipal UserDTO user) {
-        return ResponseEntity.created(URI.create(""))
-                .body(
+        return ResponseEntity.ok(
                         HttpResponse.builder()
                                 .timestamp(now().toString())
                                 .data(of("user", userService.getUserByEmail(user.getEmail()),
@@ -139,7 +146,7 @@ public class CustomerResource {
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("user", userService.getUserByEmail(user.getEmail()),
-                                "invoices", customerService.getInvoices(page.orElse(0), size.orElse(10))))
+                                "page", customerService.getInvoices(page.orElse(0), size.orElse(10))))
                         .message("Invoice retrieved")
                         .status(OK)
                         .statusCode(OK.value())
@@ -149,11 +156,12 @@ public class CustomerResource {
 
     @GetMapping("/invoice/get/{id}")
     public ResponseEntity<HttpResponse> getInvoice(@AuthenticationPrincipal UserDTO user, @PathVariable("id") Long id) {
+        Invoice invoice = customerService.getInvoice(id);
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("user", userService.getUserByEmail(user.getEmail()),
-                                "invoice", customerService.getInvoice(id)))
+                                "invoice", invoice, "customer", invoice.getCustomer()))
                         .message("Invoice retrieved")
                         .status(OK)
                         .statusCode(OK.value())
@@ -164,17 +172,29 @@ public class CustomerResource {
     @PostMapping("/invoice/addtocustomer/{id}")
     public ResponseEntity<HttpResponse> addInvoiceToCustomer(@AuthenticationPrincipal UserDTO user, @PathVariable("id") Long id, @RequestBody Invoice invoice) {
         customerService.addInvoiceToCustomer(id, invoice);
-        return ResponseEntity.created(URI.create(""))
-                .body(
+        return ResponseEntity.ok(
                         HttpResponse.builder()
                                 .timestamp(now().toString())
                                 .data(of("user", userService.getUserByEmail(user.getEmail()),
                                         "customers", customerService.getCustomers()))
-                                .message("Customers retrieved")
+                                .message(String.format("Invoice added to customer with ID: %s", id))
                                 .status(OK)
                                 .statusCode(OK.value())
                                 .build());
     }
 
+
+    @GetMapping("/download/report")
+    public ResponseEntity<Resource> downloadReport() {
+         List<Customer> customers = new ArrayList<>();
+         customerService.getCustomers().iterator().forEachRemaining(customers::add);
+         CustomerReport report = new CustomerReport(customers);
+         HttpHeaders headers = new HttpHeaders();
+         headers.add("File-Name", "customer-report.xlsx");
+         headers.add(CONTENT_DISPOSITION, "attachment; File-name =customer-report.xlsx");
+
+         return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                 .headers(headers).body(report.export());
+    }
 
 }

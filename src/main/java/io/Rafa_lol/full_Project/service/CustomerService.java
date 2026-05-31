@@ -2,7 +2,7 @@ package io.Rafa_lol.full_Project.service;
 
 import io.Rafa_lol.full_Project.domain.Customer;
 import io.Rafa_lol.full_Project.domain.Invoice;
-import io.Rafa_lol.full_Project.dto.UserDTO;
+import io.Rafa_lol.full_Project.domain.Stats;
 import org.springframework.data.domain.Page;
 
 public interface CustomerService {
@@ -22,4 +22,6 @@ public interface CustomerService {
     void addInvoiceToCustomer(Long id, Invoice  invoice);
 
     Invoice getInvoice(Long id);
+
+    Stats getStats();
 }

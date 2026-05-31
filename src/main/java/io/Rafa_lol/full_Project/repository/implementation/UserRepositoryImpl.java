@@ -10,6 +10,9 @@ import io.Rafa_lol.full_Project.form.UpdateForm;
 import io.Rafa_lol.full_Project.repository.RoleRepository;
 import io.Rafa_lol.full_Project.repository.UserRepository;
 import io.Rafa_lol.full_Project.rowmapper.UserRowMapper;
+import io.Rafa_lol.full_Project.service.EmailService;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -33,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static io.Rafa_lol.full_Project.enumeration.RoleType.ROLE_USER;
 import static io.Rafa_lol.full_Project.enumeration.VerificationType.ACCOUNT;
@@ -58,6 +62,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
     private final NamedParameterJdbcTemplate jdbc; /// Spring abre e feche as conecções com a base de dados automaticamente
     private final RoleRepository<Role> roleRepository;
     private final BCryptPasswordEncoder encoder;
+    private final EmailService emailService;
 
     @Override
     public User create(User user) {
@@ -83,6 +88,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             jdbc.update(INSERT_ACCOUNT_VERIFICATION_URL_QUERY, of("userId", user.getId(), "url", verificationUrl));
 
             // send email to user with verification URL
+            sendEmail(user.getFirstName(), user.getEmail(), verificationUrl, ACCOUNT);
             //emailService.sendVerificationUrl(user.getFirstName(), user.getEmail(), verificationUrl, ACCOUNT);
             user.setEnabled(true);     //estado inicial da conta, desativada(precisa de ser ativada) e não bloqueada
             user.setNotLocked(true);
@@ -97,6 +103,31 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             throw new ApiException("An error occured. Please try again.");
         }
     }
+
+    private void sendEmail(String firstName, String email, String verificationUrl, VerificationType verificationType) {
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            try{
+                emailService.sendVerificationEmail(firstName, email, verificationUrl, verificationType);
+
+            }catch (Exception exception){
+                throw new ApiException("Unable to send email");
+            }
+        });
+    }
+    /*
+    CompletableFuture<Void> future = CompletableFuture.runAsync(new Runnable(){
+        @Override
+        public void run() {
+            try{
+                emailService.sendVerificationEmail(firstName, email, verificationUrl, verificationType);
+
+            }catch (Exception exception){
+                throw new ApiException("Unable to send email");
+            }
+        }
+    });*/
+
+
 
 
     @Override
@@ -203,6 +234,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             jdbc.update(DELETE_PASSWORD_VERIFICATION_BY_USER_ID_QUERY, of("userId", user.getId()));
             jdbc.update(INSERT_PASSWORD_VERIFICATION_QUERY, of("userId", user.getId(), "url", verificationUrl, "expirationDate", expirationDate));
             // send email with url to user
+            sendEmail(user.getFirstName(), email, verificationUrl, PASSWORD);
             log.info("Verification URL: {}", verificationUrl);
         }catch (Exception e) {
             throw new ApiException("An error occured. Please try again.");
@@ -232,6 +264,20 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
         try {
             jdbc.update(UPDATE_USER_PASSWORD_BY_URL_QUERY, of("password", encoder.encode(password), "url", getVerificationUrl(key, PASSWORD.getType())));
             jdbc.update(DELETE_VERIFICATION_BY_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())));
+
+
+        }catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("An error occured. Please try again.");
+        }
+    }
+
+    @Override
+    public void renewPassword(Long userId, String password, String confirmPassword) {
+        if(!password.equals(confirmPassword)) throw new ApiException("Passwords dont match. Please try again.");
+        try {
+            jdbc.update(UPDATE_USER_PASSWORD_BY_USER_ID_QUERY, of("id", userId, "password", encoder.encode(password)));
+            //jdbc.update(DELETE_PASSWORD_VERIFICATION_BY_USER_ID_QUERY, of("userId", userId));
 
 
         }catch (Exception e) {

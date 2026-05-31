@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -29,8 +30,8 @@ public class Invoice {
     private Long id;
     @Column(name = "invoice_number")
     private String invoiceNumber;
-    private String service;
-    private LocalDateTime date;
+    private String services;
+    private LocalDate date;
     private String status;
     private double total;
 

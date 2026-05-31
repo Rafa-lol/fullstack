@@ -8,10 +8,7 @@ import io.Rafa_lol.full_Project.dto.UserDTO;
 import io.Rafa_lol.full_Project.enumeration.EventType;
 import io.Rafa_lol.full_Project.event.NewUserEvent;
 import io.Rafa_lol.full_Project.exception.ApiException;
-import io.Rafa_lol.full_Project.form.LoginForm;
-import io.Rafa_lol.full_Project.form.SettingsForm;
-import io.Rafa_lol.full_Project.form.UpdateForm;
-import io.Rafa_lol.full_Project.form.UpdatePasswordForm;
+import io.Rafa_lol.full_Project.form.*;
 import io.Rafa_lol.full_Project.provider.TokenProvider;
 import io.Rafa_lol.full_Project.repository.UserRepository;
 import io.Rafa_lol.full_Project.service.EventService;
@@ -87,7 +84,7 @@ public class UserResource {
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("user", userDTO))
-                        .message("User created")
+                        .message(String.format("User account created for user %s", user.getFirstName()))
                         .status(CREATED)
                         .statusCode(CREATED.value())
                         .build());
@@ -154,6 +151,20 @@ public class UserResource {
                         .build());
     }
 
+
+
+    @GetMapping("/verify/account/{key}")
+    public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timestamp(now().toString())
+                        .message(userService.verifyAccountKey(key).isEnabled() ? "Account already verified" : "Account verified")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+
+
     @GetMapping("/verify/password/{key}")
     public ResponseEntity<HttpResponse> verifyPasswordUrl(@PathVariable ("key") String key) {
         UserDTO user = userService.verifyPasswordKey(key);
@@ -167,10 +178,9 @@ public class UserResource {
                         .build());
     }
 
-    @PostMapping("/resetpassword/{key}/{password}/{confirmPassword}")
-    public ResponseEntity<HttpResponse> resetPasswordWithKey(@PathVariable ("key") String key, @PathVariable("password") String password,
-                                                          @PathVariable("confirmPassword") String confirmPassword) {
-        userService.renewPassword(key, password, confirmPassword);
+    @PutMapping("/new/password")
+    public ResponseEntity<HttpResponse> resetPasswordWithKey(@RequestBody @Valid NewPasswordForm form) {
+        userService.updatePassword(form.getUserId(), form.getPassword(), form.getConfirmPassword());
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
@@ -265,19 +275,6 @@ public class UserResource {
         return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/" + fileName));
     }
 
-
-
-
-    @GetMapping("/verify/account/{key}")
-    public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {
-        return ResponseEntity.ok().body(
-                HttpResponse.builder()
-                        .timestamp(now().toString())
-                        .message(userService.verifyAccountKey(key).isEnabled() ? "Account already verified" : "Account verified")
-                        .status(OK)
-                        .statusCode(OK.value())
-                        .build());
-    }
 
 
     @GetMapping("/refresh/token")
